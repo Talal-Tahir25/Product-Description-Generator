@@ -11,65 +11,57 @@ MOCK_DESCRIPTIONS = [
 
 MOCK_KEYWORDS = ["premium", "quality", "durable", "innovative", "must-have", "top-rated"]
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 def generate_product_content(request: ProductRequest) -> ProductResponse:
-    api_key = os.getenv("OPENAI_API_KEY")
-    
+    # Use the key provided by the user (or from env)
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return _generate_mock(request)
-    
-    return _generate_llm(request, api_key)
+         # Fallback error if not found
+         return ProductResponse(
+            product_name=request.product_name,
+            description="[ERROR] API Key not found. Please set GEMINI_API_KEY in .env file.",
+            keywords=["error"]
+        )
 
-def _generate_mock(request: ProductRequest) -> ProductResponse:
-    """Fallback generator when no API key is provided."""
-    features_str = ", ".join(request.features)
-    template = random.choice(MOCK_DESCRIPTIONS)
-    
-    description = template.format(
-        name=request.product_name,
-        audience=request.target_audience,
-        features=features_str
-    )
-    
-    # Generate some pseudo-dynamic keywords
-    keywords = list(set([request.product_name.split()[0].lower(), request.target_audience.split()[0].lower()] + 
-               random.sample(MOCK_KEYWORDS, 4)))
-    
-    return ProductResponse(
-        product_name=request.product_name,
-        description=description,
-        keywords=keywords
-    )
+    return _generate_gemini(request, api_key)
 
-def _generate_llm(request: ProductRequest, api_key: str) -> ProductResponse:
+def _generate_gemini(request: ProductRequest, api_key: str) -> ProductResponse:
     """
-    Real integration with OpenAI (or compatible LLM).
-    Note: Requires 'openai' package installed.
+    Integration with Google Gemini API.
     """
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
+        import google.generativeai as genai
+        import json
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')
         
         prompt = f"""
+        You are a professional copywriter.
         Generate a {request.tone} product description for:
         Product: {request.product_name}
         Audience: {request.target_audience}
         Features: {', '.join(request.features)}
         
         Also provide 5 SEO keywords.
-        Format output as JSON with keys: description, keywords (list).
+        
+        Output strictly valid JSON with keys: "description" (string) and "keywords" (list of strings).
+        Do not include markdown code blocks (```json). Just the raw JSON.
         """
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a professional copywriter."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={ "type": "json_object" }
-        )
+        response = model.generate_content(prompt)
         
-        import json
-        content = json.loads(response.choices[0].message.content)
+        # Clean up potential markdown formatting if Gemini adds it
+        content_str = response.text.strip()
+        if content_str.startswith("```json"):
+            content_str = content_str[7:]
+        if content_str.endswith("```"):
+            content_str = content_str[:-3]
+            
+        content = json.loads(content_str)
         
         return ProductResponse(
             product_name=request.product_name,
@@ -78,14 +70,14 @@ def _generate_llm(request: ProductRequest, api_key: str) -> ProductResponse:
         )
         
     except ImportError:
-        return ProductResponse(
+         return ProductResponse(
             product_name=request.product_name,
-            description="[ERROR] OpenAI library not installed. Please install it or unset the API key to use mock mode. (pip install openai)",
+            description="[ERROR] google-generativeai library not installed.",
             keywords=["error"]
         )
     except Exception as e:
          return ProductResponse(
             product_name=request.product_name,
-            description=f"[ERROR] LLM Generation failed: {str(e)}",
+            description=f"[ERROR] Gemini Generation failed: {str(e)}",
             keywords=["error"]
         )
