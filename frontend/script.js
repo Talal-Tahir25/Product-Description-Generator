@@ -64,3 +64,53 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         generateBtn.innerText = 'Generate Content';
     }
 });
+
+document.getElementById('suggestBtn').addEventListener('click', async () => {
+    const suggestBtn = document.getElementById('suggestBtn');
+    const audienceSelect = document.getElementById('audienceSelect');
+    const suggestionBox = document.getElementById('audienceSuggestions');
+    const productName = document.getElementById('productName').value;
+    const features = document.getElementById('features').value.split(',').map(f => f.trim()).filter(f => f);
+
+    if (!productName || features.length === 0) {
+        alert("Please enter Product Name and Features first.");
+        return;
+    }
+
+    suggestBtn.disabled = true;
+    suggestBtn.innerText = "Thinking...";
+
+    try {
+        const response = await fetch('http://127.0.0.1:8000/suggest_audiences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_name: productName, features: features })
+        });
+
+        const data = await response.json();
+
+        // Clear and Populate Select
+        audienceSelect.innerHTML = '<option value="">Select a suggested audience...</option>';
+        data.audiences.forEach(aud => {
+            const option = document.createElement('option');
+            option.value = aud;
+            option.innerText = aud;
+            audienceSelect.appendChild(option);
+        });
+
+        suggestionBox.style.display = 'block';
+
+    } catch (error) {
+        console.error("Suggestion Error:", error);
+        alert("Failed to get suggestions.");
+    } finally {
+        suggestBtn.disabled = false;
+        suggestBtn.innerText = "✨ Suggest";
+    }
+});
+
+document.getElementById('audienceSelect').addEventListener('change', (e) => {
+    if (e.target.value) {
+        document.getElementById('audience').value = e.target.value;
+    }
+});

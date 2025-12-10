@@ -11,3 +11,10 @@ class ProductResponse(BaseModel):
     product_name: str
     description: str
     keywords: List[str]
+
+class AudienceRequest(BaseModel):
+    product_name: str
+    features: List[str]
+
+class AudienceResponse(BaseModel):
+    audiences: List[str]

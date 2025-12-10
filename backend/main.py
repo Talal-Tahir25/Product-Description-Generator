@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from models import ProductRequest, ProductResponse
-from services import generate_product_content
+from models import ProductRequest, ProductResponse, AudienceRequest, AudienceResponse
+from services import generate_product_content, generate_audience_suggestions
 import uvicorn
 
 app = FastAPI(title="Product Description Generator API")
@@ -24,6 +24,13 @@ def generate_description(request: ProductRequest):
     try:
         response = generate_product_content(request)
         return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/suggest_audiences", response_model=AudienceResponse)
+def suggest_audiences(request: AudienceRequest):
+    try:
+        return generate_audience_suggestions(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

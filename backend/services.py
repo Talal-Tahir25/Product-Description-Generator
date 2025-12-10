@@ -1,6 +1,6 @@
 import os
 import random
-from models import ProductRequest, ProductResponse
+from models import ProductRequest, ProductResponse, AudienceRequest, AudienceResponse
 
 # Mock data for fallback when no API key is present
 MOCK_DESCRIPTIONS = [
@@ -37,7 +37,8 @@ def _generate_gemini(request: ProductRequest, api_key: str) -> ProductResponse:
         import json
         
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        # Using 2.5-flash as requested
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = f"""
         You are a professional copywriter.
@@ -81,3 +82,40 @@ def _generate_gemini(request: ProductRequest, api_key: str) -> ProductResponse:
             description=f"[ERROR] Gemini Generation failed: {str(e)}",
             keywords=["error"]
         )
+
+def generate_audience_suggestions(request: AudienceRequest) -> AudienceResponse:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return AudienceResponse(audiences=["[Error] No API Key found"])
+
+    try:
+        import google.generativeai as genai
+        import json
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Suggest 5 distinct potential target audiences for this product:
+        Product: {request.product_name}
+        Features: {', '.join(request.features)}
+        
+        Return strictly a valid JSON object with a single key "audiences" containing a list of strings.
+        Example: {{ "audiences": ["Busy Professionals", "Students", ...] }}
+        Do not use markdown.
+        """
+        
+        response = model.generate_content(prompt)
+        content_str = response.text.strip()
+        
+        # Clean markdown if present
+        if content_str.startswith("```json"):
+            content_str = content_str[7:]
+        if content_str.endswith("```"):
+            content_str = content_str[:-3]
+            
+        data = json.loads(content_str)
+        return AudienceResponse(audiences=data.get("audiences", []))
+        
+    except Exception as e:
+        return AudienceResponse(audiences=[f"Error: {str(e)}"])

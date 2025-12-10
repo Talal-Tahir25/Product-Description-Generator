@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Input Section -->
@@ -15,7 +17,7 @@
                 <h1>ProductGen AI</h1>
                 <h2>Create compelling descriptions in seconds.</h2>
             </header>
-            
+
             <form id="productForm">
                 <div class="form-group">
                     <label for="productName">Product Name</label>
@@ -24,12 +26,24 @@
 
                 <div class="form-group">
                     <label for="features">Key Features (comma separated)</label>
-                    <textarea id="features" placeholder="e.g. Breathable mesh, memory foam sole, water resistant..." required></textarea>
+                    <textarea id="features" placeholder="e.g. Breathable mesh, memory foam sole, water resistant..."
+                        required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="audience">Target Audience</label>
-                    <input type="text" id="audience" placeholder="e.g. Marathon runners, gym goers" required>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="audience" placeholder="e.g. Marathon runners, gym goers" required
+                            style="flex: 1;">
+                        <button type="button" id="suggestBtn"
+                            style="width: auto; padding: 0.8rem; margin-top: 0; background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent-color);">✨
+                            Suggest</button>
+                    </div>
+                    <div id="audienceSuggestions" style="margin-top: 0.5rem; display: none;">
+                        <select id="audienceSelect" style="width: 100%;">
+                            <option value="">Select a suggested audience...</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -75,4 +89,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
